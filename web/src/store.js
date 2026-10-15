@@ -6,6 +6,22 @@ export const AC_MODES = ['cool', 'heat', 'dry', 'fan', 'auto'];
 export const AC_FANS = ['auto', 'low', 'medium', 'high', 'turbo'];
 export const AC_SWINGS = ['swing', 'l1', 'l2', 'l3', 'l4', 'l5', 'off'];
 
+/** What the panel offers for an AC that has not said what it can do (a simulated one); a real unit narrows it. */
+export const AC_EXTRAS = [
+  { key: 'breeze', label: 'Breeze Away', desc: 'Airflow that avoids blowing directly on you', kind: 'select', options: ['off', 'away', 'mild', 'breezeless'] },
+  { key: 'ieco', label: 'ECOMaster', desc: 'Improves efficiency while maintaining your comfort', kind: 'toggle' },
+  { key: 'ecoEye', label: 'ECO Smart Eye', desc: 'Energy saving when you are away for 30 minutes', kind: 'toggle' },
+  { key: 'flash', label: 'Flash', desc: 'Reach the set-point faster in cooling or heating', kind: 'toggle' },
+  { key: 'turbo', label: 'Boost', desc: 'The fastest way to reach the desired temperature', kind: 'toggle' },
+  { key: 'rate', label: 'Generator Mode', desc: 'Decrease power to save energy', kind: 'select', options: ['off', 'L1', 'L2', 'L3', 'L4', 'L5'] },
+  { key: 'beep', label: 'Beep', desc: 'The AC beeps when it receives a command', kind: 'toggle' },
+  { key: 'display', label: 'LED', desc: "Turn the AC's LED display on or off", kind: 'toggle' },
+  { key: 'silent', label: 'Silent', desc: 'Reduce the unit noise to keep quiet', kind: 'toggle' },
+  { key: 'selfClean', label: 'Active Clean', desc: 'Clean the inside of the unit and prevent bacteria', kind: 'toggle' },
+  { key: 'freeze', label: 'Freeze Protection', desc: 'Keep at least 8 °C for frost protection', kind: 'toggle' },
+  { key: 'targetHumidity', label: 'Custom Dry', desc: 'Run dry mode to a target humidity', kind: 'number', min: 30, max: 85 },
+];
+
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 
 function defaultLight(cfg) {
@@ -144,7 +160,7 @@ export function createStore(config) {
     const cfg = acCfg.get(id);
     if (!cur) return false;
     const clean = { ...patch };
-    if ('target' in clean) clean.target = clamp(Math.round(clean.target), cfg.min, cfg.max);
+    if ('target' in clean) clean.target = clamp(Math.round(clean.target * 2) / 2, cfg.min, cfg.max) // half-degree steps;
     const diff = Object.fromEntries(Object.entries(clean).filter(([k, v]) => cur[k] !== v));
     if (!Object.keys(diff).length) return false;
     const before = Object.fromEntries(Object.keys(diff).map((k) => [k, cur[k]]));
@@ -180,7 +196,7 @@ export function createStore(config) {
 
     /** What the panel may offer for this AC: modes, fan speeds, and the optional extras. */
     acFeatures(id) {
-      return features[id] || { modes: AC_MODES, fans: AC_FANS, sleep: true, eco: true, swing: true };
+      return features[id] || { modes: AC_MODES, fans: AC_FANS, sleep: true, eco: true, swing: true, extras: AC_EXTRAS };
     },
 
     on(fn) { listeners.add(fn); return () => listeners.delete(fn); },

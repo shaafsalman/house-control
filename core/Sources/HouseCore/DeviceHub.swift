@@ -11,10 +11,11 @@ public final class DeviceHub {
     public let cloud: LinkedCloud?
     public let homeAssistant: HomeAssistantService
     public let hue: HueService
+    public let midea: MideaService
     /// Apple Home: HomeKit itself on the iPhone, the iPhone's catalog on the Mac.
     public let homeKit: DeviceService
     /// The platforms other than Smart Life, by the id a plan's `link.service` uses.
-    public var services: [DeviceService] { [homeAssistant, hue, homeKit] }
+    public var services: [DeviceService] { [homeAssistant, hue, midea, homeKit] }
     private func service(_ id: String) -> DeviceService? { services.first { $0.id == id } }
     /// Smart Life when it is part of this build and signed in.
     private var connectedCloud: LinkedCloud? { cloud?.isConnected == true ? cloud : nil }
@@ -51,6 +52,7 @@ public final class DeviceHub {
         self.cloud = cloud?(directory, vault)
         homeAssistant = HomeAssistantService(vault: vault("homeassistant"))
         hue = HueService(vault: vault("hue"))
+        midea = MideaService()
         self.homeKit = homeKit ?? RemoteCatalogService(id: "homekit", title: "Apple Home",
                                                        file: directory.appendingPathComponent("homekit-devices.json"))
         for service in services {

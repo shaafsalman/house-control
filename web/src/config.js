@@ -118,6 +118,7 @@ export function normalize(raw) {
     interiorWallHeight: raw.interiorWallHeight ?? 1.25,
     camera: { azimuth: raw.camera?.azimuth ?? 34, elevation: raw.camera?.elevation ?? 47 },
     outdoorTemp: raw.outdoorTemp ?? 27,
+    defaultRoom: raw.defaultRoom ?? null,
     rooms,
     openings,
     furniture: raw.furniture || [],

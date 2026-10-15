@@ -33,7 +33,7 @@ function acTemperatureColor(target, cfg) {
 
 export function createPanel(root, config, store, { onFocus, onMenu }) {
   const { state } = store;
-  const ui = { room: 'all', sheet: null };
+  const ui = { room: config.rooms.some((r) => r.id === config.defaultRoom) ? config.defaultRoom : 'all', sheet: null };
   let world = null;
   const roomName = new Map(config.rooms.map((r) => [r.id, r.name]));
 
@@ -210,7 +210,7 @@ export function createPanel(root, config, store, { onFocus, onMenu }) {
       e.stopPropagation();
       haptic('tick');
       const s = state.acs[cfg.id];
-      store.setAC(cfg.id, { on: true, target: s.target + d });
+      store.setAC(cfg.id, { on: true, target: s.target + d / 2 });
     };
     const el = h('div.tile.ac', { role: 'button', tabindex: 0, 'aria-label': cfg.name, onclick: () => openSheet({ kind: 'ac', id: cfg.id }) },
       bubble,
@@ -296,11 +296,11 @@ export function createPanel(root, config, store, { onFocus, onMenu }) {
     return true;
   }
 
-  function sheetHead(name, sub, powerBtn) {
+  function sheetHead(name, sub, powerBtn, ...extra) {
     return h('div.sheet-head',
       h('button.round', { 'aria-label': 'Back', onclick: closeSheet }, icon('back', 19, 2.2)),
       h('div.sheet-title', h('div.sheet-name', name), sub),
-      powerBtn);
+      ...extra, powerBtn);
   }
 
   function bigNumber(unit) {
@@ -323,21 +323,66 @@ export function createPanel(root, config, store, { onFocus, onMenu }) {
     };
   }
 
+  /* ---------- airflow + power diagrams (inline SVG) ---------- */
+  const svgEl = (markup) => { const t = document.createElement('template'); t.innerHTML = markup.trim(); return t.content.firstChild; };
+  const V_ANGLES = [8, 28, 48, 68, 86];      // degrees below horizontal, position 1 (high) … 5 (low)
+  const H_ANGLES = [-52, -26, 0, 26, 52];    // degrees from straight ahead, position 1 (left) … 5 (right)
+
+  /** Side view (up–down louvres) or top view (left–right vanes): the unit and the air leaving it. */
+  function airflowSvg(axis, pos, swinging, size = 64) {
+    const ray = (x1, y1, x2, y2, extra = '') => `<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" class="ray ${extra}"/>`;
+    let body = '';
+    if (axis === 'V') {
+      body = '<line x1="3" y1="2" x2="3" y2="54" class="wall"/><rect x="4" y="4" width="36" height="11" rx="4" class="unit"/>';
+      const angles = swinging ? V_ANGLES : [V_ANGLES[(pos || 3) - 1]];
+      angles.forEach((deg, i) => {
+        const r = deg * Math.PI / 180;
+        for (const x of [20, 28, 36]) body += ray(x, 17, x + 26 * Math.cos(r), 17 + 26 * Math.sin(r), swinging ? `sw d${i}` : (pos ? '' : 'dim'));
+      });
+    } else {
+      body = '<line x1="4" y1="3" x2="60" y2="3" class="wall"/><rect x="14" y="4" width="36" height="10" rx="4" class="unit"/>';
+      const angles = swinging ? H_ANGLES : [H_ANGLES[(pos || 3) - 1]];
+      angles.forEach((deg, i) => {
+        const r = deg * Math.PI / 180;
+        for (const d of [-9, 0, 9]) {
+          const a = r + d * Math.PI / 180;
+          body += ray(32, 16, 32 + 32 * Math.sin(a), 16 + 32 * Math.cos(a), swinging ? `sw d${i}` : (pos ? '' : 'dim'));
+        }
+      });
+    }
+    return svgEl(`<svg class="flow-svg" viewBox="0 0 64 56" width="${size}" height="${size * 56 / 64}" aria-hidden="true">${body}</svg>`);
+  }
+
+  /** A battery filled to `level` of 5: how much power Generator Mode lets the unit draw. */
+  function batterySvg(level) {
+    const fill = level ? `<rect x="4.5" y="${23.5 - level * 3.4}" width="11" height="${level * 3.4}" rx="1.5" class="bat-fill"/>` : '';
+    return svgEl(`<svg class="bat-svg" viewBox="0 0 20 28" width="20" height="28" aria-hidden="true"><rect x="7" y="1" width="6" height="3" rx="1" class="bat-cap"/><rect x="3" y="4" width="14" height="22" rx="3" class="bat-body"/>${fill}</svg>`);
+  }
+
   function acSheet(id) {
     const cfg = store.acCfg.get(id);
     const s = () => state.acs[id];
     const set = (patch) => store.setAC(id, patch);
+    const features = () => store.acFeatures(id);
+    const hasExtra = (key) => (features().extras || []).some((e) => e.key === key);
     const sub = h('div.sheet-sub');
     const powerBtn = h('button.round.power', { 'aria-label': 'Power', onclick: () => { haptic('medium'); set({ on: !s().on }); } }, icon('power', 21, 2.2));
+    const gear = h('button.round', { 'aria-label': 'Settings', onclick: () => showView('settings') }, icon('settings', 19, 2));
     const big = bigNumber('°C');
     const eco = h('button.toggle-chip', { onclick: () => { haptic('light'); set({ eco: !s().eco }); } }, icon('leaf', 17), 'Eco Mode', h('span.switch'));
+    const roomNum = h('span');
+    const roomRead = h('div.room-read', h('div.room-label', icon('thermo', 12, 2.2), 'Room'), h('div.room-value', roomNum, h('small', '°C')));
     const slider = createSlider({
-      min: cfg.min, max: cfg.max, value: s().target, gradient: TEMP_GRADIENT,
+      min: cfg.min, max: cfg.max, step: 0.5, detent: 1, value: s().target, gradient: TEMP_GRADIENT,
       labels: [`${cfg.min}°`, `${cfg.max}°`],
       onInput: (v) => set({ on: true, target: v }),
     });
 
-    const features = () => store.acFeatures(id);
+    /* --- pinned: AI mode (ECOMaster) --- */
+    const ai = h('button.ai-chip', { onclick: () => { haptic('light'); set({ ieco: !s().ieco }); } },
+      h('span.ai-badge', 'AI'), h('span.ai-text', h('b', 'AI Mode'), h('small', 'ECOMaster · saves energy, keeps you comfortable')), h('span.switch'));
+
+    /* --- the four option tiles --- */
     const option = (key, label, labels, values, iconName) => {
       const value = h('div.option-value');
       let holder = h('span');
@@ -354,51 +399,175 @@ export function createPanel(root, config, store, { onFocus, onMenu }) {
         update() {
           value.textContent = labels[s()[key]];
           const ic = iconName || s().mode;
-          if (shown !== ic) {
-            const next = icon(ic, 24, 1.6);
-            holder.replaceWith(next);
-            holder = next;
-            shown = ic;
-          }
+          if (shown !== ic) { const next = icon(ic, 24, 1.6); holder.replaceWith(next); holder = next; shown = ic; }
         },
       };
     };
-
     const mode = option('mode', 'Mode', MODE_LABEL, () => features().modes, null);
     const fan = option('fan', isPhone ? 'Fan' : 'Fan speed', FAN_LABEL, () => features().fans, 'fan');
     const swing = option('swing', 'Airflow', SWING_LABEL, () => AC_SWINGS, 'wind');
     const sleepValue = h('div.option-value');
     const sleep = h('button.option', { onclick: () => { haptic('light'); set({ sleep: !s().sleep }); } },
       icon('moon', 24, 1.6), h('span.corner.dot'), h('div.option-label', 'Sleep'), sleepValue);
-    const options = h('div.options', mode.el, fan.el, sleep, swing.el);
+    // A unit with separate up–down and left–right louvres opens the airflow page instead of a menu.
+    const flowValue = h('div.option-value');
+    const flowTile = h('button.option', { onclick: () => showView('settings', 'airflow') },
+      icon('wind', 24, 1.6), h('span.corner', icon('next', 15, 2.2)), h('div.option-label', 'Airflow'), flowValue);
+    const options = h('div.options', mode.el, fan.el, sleep, swing.el, flowTile);
+    const stats = h('div.stats');
+
+    /* --- settings page --- */
+    const settingsBody = h('div.settings-body');
+    const sections = {};
+    let settingsSig = '';
+    const refreshers = [];
+
+    const posButton = (label, content, active, onclick) => {
+      const el = h('button.pos-btn', { onclick }, content, h('span', label));
+      el.classList.toggle('active', Boolean(active));
+      return el;
+    };
+
+    const flowCard = (axis) => {
+      const title = axis === 'V' ? 'Up – Down' : 'Left – Right';
+      const hint = axis === 'V' ? 'Louvre height, or sweep up and down' : 'Vane direction, or sweep left and right';
+      const swingKey = `swing${axis}`, angleKey = `angle${axis}`;
+      const view = h('div.flow-view');
+      const swingBtn = h('button.xrow.flow-swing', { onclick: () => { haptic('light'); set({ [swingKey]: !s()[swingKey] }); } },
+        h('div.xtext', h('div.xname', `${axis === 'V' ? 'Up–down' : 'Left–right'} swing`), h('div.xdesc', 'Keep sweeping automatically')), h('span.switch'));
+      const row = h('div.pos-row');
+      const card = h('div.set-card', h('div.set-title', title, h('small', hint)), h('div.flow-top', view, swingBtn), row);
+      refreshers.push(() => {
+        const a = s(); const sw = Boolean(a[swingKey]); const pos = a[angleKey] || 0;
+        view.replaceChildren(airflowSvg(axis, pos, sw, 96));
+        swingBtn.classList.toggle('on', sw);
+        row.replaceChildren(...[1, 2, 3, 4, 5].map((n) => posButton(String(n),
+          airflowSvg(axis, n, false, 46), !sw && pos === n,
+          () => { haptic('light'); set({ [swingKey]: false, [angleKey]: n }); })));
+      });
+      return card;
+    };
+
+    const rateCard = (e) => {
+      const row = h('div.pos-row');
+      const card = h('div.set-card', h('div.set-title', 'Generator Mode', h('small', 'Limit how much power the unit draws — L1 uses the least')), row);
+      refreshers.push(() => {
+        const cur = s().rate || 'off';
+        row.replaceChildren(...e.options.map((o) => posButton(o === 'off' ? 'Off' : o,
+          batterySvg(o === 'off' ? 0 : Number(o.slice(1))), cur === o,
+          () => { haptic('light'); set({ rate: o }); })));
+      });
+      return card;
+    };
+
+    const extraRow = (e) => {
+      const text = h('div.xtext', h('div.xname', e.label), h('div.xdesc', e.desc || ''));
+      if (e.kind === 'toggle') {
+        const row = h('button.xrow', { onclick: () => { haptic('light'); set({ [e.key]: !s()[e.key] }); } }, text, h('span.switch'));
+        refreshers.push(() => row.classList.toggle('on', Boolean(s()[e.key])));
+        return row;
+      }
+      if (e.kind === 'select') {
+        const value = h('span.xvalue');
+        const cap = (v) => (v === 'off' ? 'Off' : v[0].toUpperCase() + v.slice(1));
+        const row = h('button.xrow', { onclick: () => {
+          row.classList.add('open');
+          openMenu(clip, row, e.options.map((v) => ({
+            label: cap(v), selected: s()[e.key] === v, icon: s()[e.key] === v ? icon('check', 16, 2.4) : null,
+            action: () => { haptic('light'); set({ [e.key]: v }); },
+          })), { onClose: () => row.classList.remove('open') });
+        } }, text, value, icon('down', 15, 2.2));
+        refreshers.push(() => { const v = s()[e.key] ?? 'off'; value.textContent = cap(v); row.classList.toggle('on', v !== 'off'); });
+        return row;
+      }
+      const label = h('span.xvalue');
+      const range = createSlider({ min: e.min, max: e.max, value: s()[e.key] || e.min, gradient: TEMP_GRADIENT, compact: true,
+        onInput: (v) => set({ [e.key]: Math.round(v) }) });
+      refreshers.push(() => { const v = s()[e.key]; label.textContent = v ? `${v}%` : 'Off'; if (v) range.set(v); });
+      return h('div.xrow.xnum', text, label, range.el);
+    };
+
+    const buildSettings = (f) => {
+      refreshers.length = 0;
+      const nodes = [];
+      if (f.airflow) {
+        sections.airflow = h('div.set-group', h('div.set-heading', 'Airflow'),
+          ...(f.airflow.vertical ? [flowCard('V')] : []), ...(f.airflow.horizontal ? [flowCard('H')] : []));
+        nodes.push(sections.airflow);
+      }
+      const extras = (f.extras || []).filter((e) => e.key !== 'sleep');
+      const rate = extras.find((e) => e.key === 'rate');
+      if (rate) nodes.push(h('div.set-group', h('div.set-heading', 'Energy'), rateCard(rate)));
+      const rest = extras.filter((e) => e.key !== 'rate');
+      if (rest.length) nodes.push(h('div.set-group', h('div.set-heading', 'Modes & features'), ...rest.map(extraRow)));
+      settingsBody.replaceChildren(...nodes);
+    };
+
+    /* --- two views in one sheet --- */
+    const main = h('div.view',
+      h('div.readout', big.el, roomRead, eco),
+      h('div.slider-row',
+        h('button.round', { 'aria-label': 'Cooler', onclick: () => { haptic('tick'); set({ on: true, target: s().target - 0.5 }); } }, icon('minus', 18, 2.2)),
+        slider.el,
+        h('button.round', { 'aria-label': 'Warmer', onclick: () => { haptic('tick'); set({ on: true, target: s().target + 0.5 }); } }, icon('plus', 18, 2.2))),
+      stats, ai, options);
+    const settingsView = h('div.view', { hidden: true },
+      h('div.set-head', h('button.round', { 'aria-label': 'Back', onclick: () => showView('main') }, icon('back', 19, 2.2)),
+        h('div.sheet-title', h('div.sheet-name', 'Settings'), h('div.sheet-sub', cfg.name))),
+      settingsBody);
+    const head = sheetHead(cfg.name, sub, powerBtn, gear);
+    const showView = (name, section) => {
+      head.hidden = name !== 'main';
+      main.hidden = name !== 'main';
+      settingsView.hidden = name === 'main';
+      if (name === 'settings' && section && sections[section]) sections[section].scrollIntoView({ block: 'start' });
+    };
 
     return {
-      nodes: [
-        sheetHead(cfg.name, sub, powerBtn),
-        h('div.readout', big.el, eco),
-        h('div.slider-row',
-          h('button.round', { 'aria-label': 'Cooler', onclick: () => { haptic('tick'); set({ on: true, target: s().target - 1 }); } }, icon('minus', 18, 2.2)),
-          slider.el,
-          h('button.round', { 'aria-label': 'Warmer', onclick: () => { haptic('tick'); set({ on: true, target: s().target + 1 }); } }, icon('plus', 18, 2.2))),
-        options,
-      ],
+      nodes: [head, main, settingsView],
       update() {
         const a = s();
-        // A real AC only shows the controls it has a function for.
         const f = features();
-        const shown = [[mode.el, f.modes.length > 0], [fan.el, f.fans.length > 0], [sleep, f.sleep], [swing.el, f.swing]];
+        const pinned = hasExtra('ieco');
+        const shown = [[mode.el, f.modes.length > 0], [fan.el, f.fans.length > 0], [sleep, f.sleep],
+          [swing.el, f.swing && !f.airflow], [flowTile, Boolean(f.airflow)]];
         for (const [el, on] of shown) el.hidden = !on;
-        eco.hidden = !f.eco;
+        eco.hidden = !f.eco || pinned;
+        ai.hidden = !pinned;
+        ai.classList.toggle('on', Boolean(a.ieco));
         options.style.gridTemplateColumns = `repeat(${shown.filter(([, on]) => on).length || 1}, 1fr)`;
         powerBtn.classList.toggle('on', a.on);
-        sub.replaceChildren(icon('thermo', 14), 'Room ', h('b', `${a.roomTemp.toFixed(1)}°C`),
+        sub.replaceChildren(h('b', a.on ? MODE_LABEL[a.mode] : 'Off'),
           h('span.live', { style: { background: a.on ? MODE_COLORS[a.mode] : 'rgba(255,255,255,.25)', boxShadow: a.on ? `0 0 8px ${MODE_COLORS[a.mode]}` : 'none' } }));
+        roomNum.textContent = a.roomTemp.toFixed(1);
+        roomRead.classList.toggle('cooling', a.on && a.mode === 'cool' && a.roomTemp > a.target);
         big.set(a.target, !a.on);
         slider.set(a.target);
         eco.classList.toggle('on', a.eco);
         mode.update(); fan.update(); swing.update();
         sleep.classList.toggle('active', a.sleep);
         sleepValue.textContent = a.sleep ? 'On' : 'Off';
+        flowValue.textContent = a.swingV && a.swingH ? 'Swing both' : a.swingV ? 'Up–down' : a.swingH ? 'Left–right'
+          : (a.angleV || a.angleH) ? `Fixed ${a.angleV || '–'}·${a.angleH || '–'}` : 'Auto';
+        flowTile.classList.toggle('active', Boolean(a.swingV || a.swingH));
+
+        const sig = JSON.stringify([f.airflow, f.extras]);
+        if (sig !== settingsSig) { settingsSig = sig; buildSettings(f); }
+        refreshers.forEach((fn) => fn());
+        // Live readings, laid out like the temperature: a big number with a small unit under an icon.
+        const fmt = (v, d = 0) => (Number.isInteger(v) || d === 0 ? String(Math.round(v * 10 ** d) / 10 ** d) : v.toFixed(d));
+        const chips = [
+          a.outdoorTemp != null && ['thermo', 'Outdoor', fmt(a.outdoorTemp, 1), '°C', 'sky'],
+          a.humidity != null && ['dry', 'Humidity', fmt(a.humidity), '%', 'water'],
+          a.power != null && ['bolt', 'Power', fmt(a.power), 'W', a.power >= 1 ? 'amber' : 'dim'],
+          a.totalEnergy != null && ['plug', 'Energy', fmt(Number(a.totalEnergy), 1), 'kWh', 'green'],
+        ].filter(Boolean);
+        stats.replaceChildren(
+          ...chips.map(([ic, label, value, unit, tint]) =>
+            h(`div.metric.${tint}`, h('div.metric-label', icon(ic, 12, 2.2), label), h('div.metric-value', value, h('small', unit)))),
+          ...(a.filterAlert ? [h('div.metric.warn', icon('warn', 14, 2.2), 'Clean the filter')] : []));
+        stats.style.gridTemplateColumns = `repeat(${chips.length || 1}, 1fr)`;
+        stats.hidden = chips.length === 0 && !a.filterAlert;
       },
     };
   }

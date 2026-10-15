@@ -79,7 +79,7 @@ export async function bootIsland(root) {
     const sub = h('div.chip-sub');
     const value = h('span.chip-value');
     const bubble = h('span.chip-bubble');
-    const step = (d) => (e) => { e.stopPropagation(); store.setAC(cfg.id, { on: true, target: state.acs[cfg.id].target + d }); };
+    const step = (d) => (e) => { e.stopPropagation(); store.setAC(cfg.id, { on: true, target: state.acs[cfg.id].target + d / 2 }); };
     const el = h('div.chip.ac',
       bubble,
       h('div.chip-text', h('div.chip-name', cfg.name), sub),

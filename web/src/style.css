@@ -798,3 +798,117 @@ html.ios .fatal { margin: calc(env(safe-area-inset-top, 0px) + 20px) 16px 0; wid
     animation-duration: 1ms !important; transition-duration: 1ms !important;
   }
 }
+
+/* Extra AC controls a real unit reports (breeze, boost, LED, humidity…) */
+.stats { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; flex: none; }
+.stat { display: inline-flex; gap: 6px; align-items: baseline; padding: 5px 10px; border-radius: 12px; font-size: 12px; background: var(--glass); border: 1px solid var(--line); font-variant-numeric: tabular-nums; }
+.stat small { color: var(--muted); font-size: 11px; }
+.stat.warn { color: #ffb86b; border-color: rgba(255, 184, 107, 0.4); }
+.extras { margin-top: 12px; flex: 1 1 auto; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; scrollbar-width: none; }
+.extras::-webkit-scrollbar { display: none; }
+.xrow { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 16px; text-align: left; flex: none; background: var(--glass); border: 1px solid var(--line); transition: background 220ms, border-color 220ms; }
+@media (hover: hover) { .xrow:hover { background: var(--glass-hi); } }
+.xrow.on { border-color: rgba(120, 175, 255, 0.45); }
+.xrow.open { background: linear-gradient(180deg, rgba(88, 150, 255, 0.26), rgba(61, 139, 255, 0.1)); }
+.xrow.on .switch { background: #3d8bff; }
+.xrow.on .switch::after { transform: translateX(15px); }
+.xtext { flex: 1; min-width: 0; }
+.xname { font-size: 13px; font-weight: 600; }
+.xdesc { margin-top: 1px; font-size: 11px; color: var(--muted); line-height: 1.3; }
+.xvalue { font-size: 12.5px; font-weight: 600; color: #6fb0ff; font-variant-numeric: tabular-nums; }
+.xrow.xnum { flex-wrap: wrap; }
+.xrow.xnum .slider { flex-basis: 100%; }
+
+/* AC sheet: views, pinned AI mode, settings page */
+.view { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+.view[hidden], .sheet-head[hidden] { display: none; }
+.sheet-head { gap: 8px; }
+.ai-chip { display: flex; align-items: center; gap: 12px; margin-top: 12px; padding: 11px 14px; border-radius: 18px; flex: none; text-align: left;
+  background: var(--glass); border: 1px solid var(--line); transition: background 240ms, border-color 240ms, box-shadow 300ms; }
+.ai-chip.on { background: linear-gradient(135deg, rgba(110, 231, 160, 0.16), rgba(61, 139, 255, 0.16)); border-color: rgba(110, 231, 160, 0.5); box-shadow: 0 0 22px rgba(110, 231, 160, 0.14); }
+.ai-badge { width: 34px; height: 34px; border-radius: 11px; display: grid; place-items: center; font-weight: 800; font-size: 14px; letter-spacing: -0.02em;
+  background: rgba(255, 255, 255, 0.08); color: var(--muted); transition: background 240ms, color 240ms; }
+.ai-chip.on .ai-badge { background: linear-gradient(135deg, #6ee7a0, #3d8bff); color: #06101f; }
+.ai-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.ai-text b { font-size: 14px; font-weight: 650; }
+.ai-text small { font-size: 11px; color: var(--muted); }
+.ai-chip.on .switch { background: #3d8bff; }
+.ai-chip.on .switch::after { transform: translateX(15px); }
+
+.set-head { display: flex; align-items: center; gap: 10px; flex: none; padding-top: 2px; }
+.settings-body { flex: 1; min-height: 0; overflow-y: auto; margin: 14px -6px 0; padding: 0 6px 6px; scrollbar-width: none; display: flex; flex-direction: column; gap: 18px; }
+.settings-body::-webkit-scrollbar { display: none; }
+.set-group { display: flex; flex-direction: column; gap: 8px; }
+.set-heading { font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); padding: 0 4px; }
+.set-card { padding: 12px; border-radius: 18px; background: var(--glass); border: 1px solid var(--line); display: flex; flex-direction: column; gap: 10px; }
+.set-title { font-size: 13.5px; font-weight: 650; display: flex; flex-direction: column; gap: 2px; }
+.set-title small { font-size: 11px; font-weight: 400; color: var(--muted); }
+.flow-top { display: flex; gap: 10px; align-items: stretch; }
+.flow-view { flex: none; width: 108px; display: grid; place-items: center; border-radius: 14px; background: rgba(255, 255, 255, 0.04); }
+.flow-swing { flex: 1; min-width: 0; }
+.pos-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+.pos-row:has(.bat-svg) { grid-template-columns: repeat(6, 1fr); }
+.pos-btn { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; padding: 6px 2px; border-radius: 12px; font-size: 11px; font-weight: 600; color: var(--muted);
+  background: rgba(255, 255, 255, 0.04); border: 1px solid var(--line); transition: background 200ms, border-color 200ms, color 200ms; }
+@media (hover: hover) { .pos-btn:hover { background: var(--glass-hi); } }
+.pos-btn.active { color: var(--text); border-color: rgba(120, 175, 255, 0.55); background: linear-gradient(180deg, rgba(88, 150, 255, 0.28), rgba(61, 139, 255, 0.1)); }
+.flow-svg .wall { stroke: rgba(255, 255, 255, 0.28); stroke-width: 2; stroke-linecap: round; }
+.flow-svg .unit { fill: rgba(255, 255, 255, 0.1); stroke: rgba(255, 255, 255, 0.5); stroke-width: 1.4; }
+.flow-svg .ray { stroke: #6fb0ff; stroke-width: 2; stroke-linecap: round; stroke-dasharray: 3 4; animation: flow-dash 900ms linear infinite; }
+.flow-svg .ray.dim { stroke: rgba(255, 255, 255, 0.25); animation: none; }
+.flow-svg .ray.sw { opacity: 0.2; animation: flow-dash 900ms linear infinite, flow-sweep 2.4s ease-in-out infinite; }
+.flow-svg .ray.sw.d1 { animation-delay: 0s, 0.3s; } .flow-svg .ray.sw.d2 { animation-delay: 0s, 0.6s; }
+.flow-svg .ray.sw.d3 { animation-delay: 0s, 0.9s; } .flow-svg .ray.sw.d4 { animation-delay: 0s, 1.2s; }
+@keyframes flow-dash { to { stroke-dashoffset: -14; } }
+@keyframes flow-sweep { 0%, 100% { opacity: 0.15; } 40% { opacity: 1; } }
+.pos-btn.active .flow-svg .ray { stroke: #9cc9ff; }
+.bat-svg .bat-body { fill: none; stroke: rgba(255, 255, 255, 0.45); stroke-width: 1.5; }
+.bat-svg .bat-cap { fill: rgba(255, 255, 255, 0.45); }
+.bat-svg .bat-fill { fill: #6ee7a0; }
+.pos-btn.active .bat-svg .bat-body { stroke: #9cc9ff; }
+@media (prefers-reduced-motion: reduce) { .flow-svg .ray, .flow-svg .ray.sw { animation: none; opacity: 1; } }
+
+/* compact AC main view so the AI chip and all four tiles fit */
+.view { overflow-y: auto; scrollbar-width: none; }
+.view::-webkit-scrollbar { display: none; }
+.stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 8px; }
+.stat { flex-direction: column; align-items: flex-start; gap: 0; padding: 5px 9px; border-radius: 11px; }
+.stat.warn { grid-column: 1 / -1; align-items: center; }
+.stat b { font-size: 12.5px; }
+.stat small { font-size: 10px; }
+.ai-chip { margin-top: 8px; padding: 8px 12px; gap: 10px; border-radius: 16px; }
+.ai-badge { width: 30px; height: 30px; border-radius: 10px; font-size: 13px; }
+.ai-text small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.view > .options { padding-top: 12px; }
+.view .option { height: 84px; }
+
+/* live readings as metric tiles: big number, small unit */
+.stats { display: grid; gap: 6px; margin-top: 8px; }
+.metric { display: flex; flex-direction: column; gap: 2px; padding: 7px 10px 8px; border-radius: 14px; min-width: 0;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.03)); border: 1px solid var(--line); }
+.metric-label { display: flex; align-items: center; gap: 5px; font-size: 10.5px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); white-space: nowrap; }
+.metric-value { display: flex; align-items: baseline; gap: 3px; font-size: 22px; font-weight: 300; letter-spacing: -0.02em; line-height: 1.05; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.metric-value small { font-size: 11px; font-weight: 500; letter-spacing: 0; color: var(--muted); }
+.metric.sky .metric-label .icon { color: #7cc4ff; }
+.metric.water .metric-label .icon { color: #5aa8ff; }
+.metric.amber .metric-label .icon { color: #ffbf5e; }
+.metric.amber .metric-value { color: #ffd9a0; }
+.metric.green .metric-label .icon { color: #6ee7a0; }
+.metric.dim .metric-value { color: var(--muted); }
+.metric.warn { grid-column: 1 / -1; flex-direction: row; align-items: center; justify-content: center; gap: 8px; padding: 8px 10px; font-size: 12.5px; font-weight: 600; color: #ffb86b; border-color: rgba(255, 184, 107, 0.4); }
+
+/* tighter spacing so metrics + AI chip + four tiles all fit */
+.view .readout { margin-top: 8px; }
+.metric { padding: 5px 9px 6px; }
+.metric-value { font-size: 20px; }
+.view .option { height: 76px; padding: 10px 11px; }
+.view > .options { padding-top: 10px; }
+.view .slider-row { margin-top: 10px; }
+
+/* room temperature, shown beside the target */
+.room-read { margin-left: auto; display: flex; flex-direction: column; align-items: flex-end; gap: 2px; padding-bottom: 10px; }
+.room-label { display: flex; align-items: center; gap: 5px; font-size: 10.5px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); }
+.room-label .icon { color: #7cc4ff; }
+.room-value { display: flex; align-items: baseline; gap: 3px; font-size: 30px; font-weight: 300; letter-spacing: -0.02em; line-height: 1; font-variant-numeric: tabular-nums; color: rgba(255, 255, 255, 0.85); }
+.room-value small { font-size: 12px; font-weight: 500; color: var(--muted); }
+.room-read.cooling .room-value { color: #9cc9ff; }
