@@ -8,6 +8,7 @@ import { buildHouse } from './house.js';
 import { buildFurniture } from './furniture.js';
 import { LightUnit } from './lights.js';
 import { ACUnit } from './ac.js';
+import { dayFactor } from '../daylight.js';
 
 export const STAGE_BG = '#0a0e1a';
 
@@ -62,7 +63,8 @@ export function createWorld(canvas, config, store, { onHover, onPick, background
   const hitTargets = [...[...lights.values()].map((u) => u.hit), ...[...acs.values()].map((u) => u.hit), ...house.floors];
 
   // Night-time ambience: enough to read the model with every lamp off.
-  scene.add(new THREE.HemisphereLight(0x8ea6ff, 0x0b0e17, 0.42));
+  const hemi = new THREE.HemisphereLight(0x8ea6ff, 0x0b0e17, 0.42);
+  scene.add(hemi);
   const moon = new THREE.DirectionalLight(0xa9c0ff, 0.6);
   // Steep and coming from the viewer's side, so the faces we look at stay readable.
   moon.position.copy(center).add(new THREE.Vector3(camDir.x * 3.2 + 1.5, 10, camDir.z * 3.2 - 1.5));
@@ -339,6 +341,7 @@ export function createWorld(canvas, config, store, { onHover, onPick, background
     const pr = Math.min(window.devicePixelRatio || 1, 2);
     renderer.setPixelRatio(pr);
     renderer.setSize(width, height, false);
+    ACUnit.viewH = height * pr;
     composer.setPixelRatio(pr);
     composer.setSize(width, height);
     camera.aspect = width / height;
@@ -352,6 +355,22 @@ export function createWorld(canvas, config, store, { onHover, onPick, background
   const world = {
     lights,
     acs,
+
+    /** 0 = night … 1 = day: the sky, the sun / moon, the ambience, the windows and the plinth. */
+    setDaylight(k) {
+      const mix = (a, b) => new THREE.Color(a).lerp(new THREE.Color(b), k);
+      hemi.color.copy(mix(0x8ea6ff, 0xe4efff));
+      hemi.groundColor.copy(mix(0x0b0e17, 0xa89c8c));
+      hemi.intensity = 0.42 + (1.3 - 0.42) * k;
+      moon.color.copy(mix(0xa9c0ff, 0xfff1da));
+      moon.intensity = 0.6 + (2.3 - 0.6) * k;
+      scene.background.copy(mix(background, '#dbe6f3'));
+      renderer.toneMappingExposure = 1.05 - 0.07 * k;
+      bloom.strength = 0.34 - 0.2 * k;
+      house.plinth?.color.copy(mix('#141927', '#a9b4c6'));
+      if (house.glass) { house.glass.emissiveIntensity = 0.5 - 0.42 * k; house.glass.opacity = 0.22 - 0.05 * k; }
+      wake(2);
+    },
 
     setInsets(top, bottom) { topInset = top; bottomInset = bottom; resize(); },
     resize,
@@ -387,6 +406,7 @@ export function createWorld(canvas, config, store, { onHover, onPick, background
 
     dispose() {
       unsubscribe();
+      window.removeEventListener('daylight', world.onDaylight);
       running = false;
       if (raf) cancelAnimationFrame(raf);
       raf = 0;
@@ -411,6 +431,9 @@ export function createWorld(canvas, config, store, { onHover, onPick, background
   syncAll({ instant: true });
   resize();
   updateRig(0, true);
+  world.onDaylight = (e) => world.setDaylight(e.detail);
+  window.addEventListener('daylight', world.onDaylight);
+  world.setDaylight(dayFactor());
   return world;
 }
 

@@ -108,6 +108,10 @@ export function createPanel(root, config, store, { onFocus, onMenu }) {
 
   function bulk(on) {
     haptic('medium');
+    if (!config.lights.length) { // a home of air conditioners only: the buttons act on them
+      for (const ac of config.acs) if (inScope(ac)) store.setAC(ac.id, { on });
+      return;
+    }
     if (ui.room === 'all') { store.setAllLights(on); return; }
     for (const l of config.lights) if (l.room === ui.room) store.setLight(l.id, { on });
   }
@@ -206,6 +210,7 @@ export function createPanel(root, config, store, { onFocus, onMenu }) {
     const sub = h('div.tile-sub');
     const value = h('div.value');
     const bubble = h('div.bubble');
+    const meta = h('div.ac-meta');
     const step = (d) => (e) => {
       e.stopPropagation();
       haptic('tick');
@@ -215,13 +220,16 @@ export function createPanel(root, config, store, { onFocus, onMenu }) {
     const el = h('div.tile.ac', { role: 'button', tabindex: 0, 'aria-label': cfg.name, onclick: () => openSheet({ kind: 'ac', id: cfg.id }) },
       bubble,
       h('div.tile-text', h('div.tile-name', cfg.name), sub),
-      h('div.stepper',
-        h('button', { 'aria-label': 'Cooler', onclick: step(-1) }, icon('minus', 15, 2.2)),
-        value,
-        h('button', { 'aria-label': 'Warmer', onclick: step(1) }, icon('plus', 15, 2.2))),
-      h('button.mini-power', { 'aria-label': `${cfg.name} power`, onclick: (e) => { e.stopPropagation(); haptic('medium'); store.setAC(cfg.id, { on: !state.acs[cfg.id].on }); } }, icon('power', 16, 2.2)));
+      h('button.mini-power', { 'aria-label': `${cfg.name} power`, onclick: (e) => { e.stopPropagation(); haptic('medium'); store.setAC(cfg.id, { on: !state.acs[cfg.id].on }); } }, icon('power', 16, 2.2)),
+      h('div.ac-row2',
+        h('div.stepper',
+          h('button', { 'aria-label': 'Cooler', onclick: step(-1) }, icon('minus', 16, 2.2)),
+          value,
+          h('button', { 'aria-label': 'Warmer', onclick: step(1) }, icon('plus', 16, 2.2))),
+        meta));
     el.addEventListener('keydown', (ev) => { if (ev.key === 'Enter') openSheet({ kind: 'ac', id: cfg.id }); });
     let shownMode = null;
+    const chip = (ic, label, text) => h('span.ac-chip', { title: label }, icon(ic, 13, 2.2), h('b', text));
     return {
       el, cfg, kind: 'ac',
       update() {
@@ -230,7 +238,11 @@ export function createPanel(root, config, store, { onFocus, onMenu }) {
         el.style.setProperty('--c', MODE_COLORS[s.mode]);
         if (shownMode !== s.mode) { bubble.replaceChildren(icon(s.mode, 19)); shownMode = s.mode; }
         value.textContent = `${s.target}°`;
-        sub.textContent = `${s.on ? MODE_LABEL[s.mode] : 'Off'} · Room ${s.roomTemp.toFixed(isPhone ? 0 : 1)}°`;
+        sub.textContent = s.on ? `${MODE_LABEL[s.mode]} · Fan ${FAN_LABEL[s.fan] ?? s.fan}` : 'Off';
+        const chips = [chip('thermo', 'Room', `${s.roomTemp.toFixed(1)}°`)];
+        if (s.humidity != null) chips.push(chip('dry', 'Humidity', `${Math.round(s.humidity)}%`));
+        if (s.power != null) chips.push(chip('bolt', 'Power', `${Math.round(s.power)} W`));
+        meta.replaceChildren(...chips);
       },
     };
   }
@@ -689,10 +701,19 @@ export function createPanel(root, config, store, { onFocus, onMenu }) {
     const acsOn = Object.values(state.acs).filter((a) => a.on);
     const anyOn = onCount > 0 || acsOn.length > 0;
 
-    homeSub.replaceChildren(
-      h('span.live', { style: anyOn ? {} : { background: 'rgba(255,255,255,.25)', boxShadow: 'none' } }),
-      h('b', onCount ? `${onCount} of ${lights.length}` : 'No'), ' lights on',
-      acsOn.length ? ` · AC ${acsOn[0].target}°` : '');
+    if (!lights.length) {
+      // A home of air conditioners only: say what they are doing instead of "No lights on".
+      const total = Object.keys(state.acs).length;
+      homeSub.replaceChildren(
+        h('span.live', { style: anyOn ? {} : { background: 'rgba(255,255,255,.25)', boxShadow: 'none' } }),
+        h('b', acsOn.length ? `${acsOn.length} of ${total}` : 'All'), acsOn.length ? ' ACs running' : ' ACs off',
+        acsOn.length ? ` · ${acsOn[0].target}°` : '');
+    } else {
+      homeSub.replaceChildren(
+        h('span.live', { style: anyOn ? {} : { background: 'rgba(255,255,255,.25)', boxShadow: 'none' } }),
+        h('b', onCount ? `${onCount} of ${lights.length}` : 'No'), ' lights on',
+        acsOn.length ? ` · AC ${acsOn[0].target}°` : '');
+    }
     power.classList.toggle('on', anyOn);
 
     for (const [id, b] of sceneButtons) b.classList.toggle('active', state.scene === id);
@@ -706,7 +727,14 @@ export function createPanel(root, config, store, { onFocus, onMenu }) {
 
     const scoped = config.lights.filter(inScope);
     const scopedOn = scoped.filter((l) => state.lights[l.id].on).length;
-    listTitle.replaceChildren(h('b', ui.room === 'all' ? 'Whole home' : roomName.get(ui.room)), ` · ${scopedOn} of ${scoped.length} on`);
+    const scopeName = h('b', ui.room === 'all' ? 'Whole home' : roomName.get(ui.room));
+    if (!config.lights.length) {
+      const acs = config.acs.filter(inScope);
+      const running = acs.filter((a) => state.acs[a.id].on).length;
+      listTitle.replaceChildren(scopeName, ` · ${running} of ${acs.length} AC${acs.length === 1 ? '' : 's'} running`);
+    } else {
+      listTitle.replaceChildren(scopeName, ` · ${scopedOn} of ${scoped.length} on`);
+    }
 
     for (const t of tiles.values()) t.update();
     sheetView?.update();

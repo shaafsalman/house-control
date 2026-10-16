@@ -1,0 +1,132 @@
+/* Daytime look. Switched on by html[data-tod="day"] (see daylight.js); night is the default styling.
+   The selectors are more specific than the base rules, so the load order of the sheets does not matter. */
+
+html[data-tod='day'] {
+  --bg: #e8eef7;
+  --text: #101828;
+  --muted: rgba(22, 34, 58, 0.64);
+  --faint: rgba(22, 34, 58, 0.42);
+  --glass: rgba(255, 255, 255, 0.72);
+  --glass-hi: rgba(255, 255, 255, 0.96);
+  --line: rgba(20, 32, 60, 0.12);
+  --accent: #2f7bf0;
+  --warm: #d9822b;
+  color-scheme: light;
+}
+
+html[data-tod='day'] body {
+  background:
+    radial-gradient(90% 70% at 20% 0%, #cfe0f5 0%, transparent 60%),
+    radial-gradient(80% 80% at 90% 100%, #f3e1cb 0%, transparent 60%),
+    #dfe7f1;
+}
+html[data-tod='day'].native body { background: transparent; }
+
+/* ---------- panel card ---------- */
+html[data-tod='day'] .card { box-shadow: 0 30px 60px -22px rgba(40, 60, 100, 0.38), 0 8px 20px -8px rgba(40, 60, 100, 0.28); }
+html[data-tod='day'].native .card { box-shadow: 0 18px 30px -12px rgba(40, 60, 100, 0.4), 0 4px 12px -4px rgba(40, 60, 100, 0.3); }
+html[data-tod='day'] .card-clip { box-shadow: 0 0 0 1px rgba(20, 32, 60, 0.1) inset; }
+html[data-tod='day'] .notch { box-shadow: -1px -1px 0 rgba(20, 32, 60, 0.1); }
+html[data-tod='day'] .tint { mix-blend-mode: normal; opacity: 0.2; }
+html[data-tod='day'] .stage::after { background: linear-gradient(180deg, rgba(232, 238, 247, 0.9) 0%, rgba(232, 238, 247, 0.5) 55%, transparent 100%); }
+
+html[data-tod='day'] .round:hover,
+html[data-tod='day'] .tile-more:hover,
+html[data-tod='day'] .stepper button:hover,
+html[data-tod='day'] .mini-power:hover,
+html[data-tod='day'] .menu button:hover,
+html[data-tod='day'].ios .menu button:active { background: rgba(20, 32, 60, 0.08); }
+html[data-tod='day'] .mini-power { background: rgba(20, 32, 60, 0.07); }
+html[data-tod='day'] .bubble { background: rgba(20, 32, 60, 0.07); }
+html[data-tod='day'] .switch { background: rgba(20, 32, 60, 0.2); }
+html[data-tod='day'] .xrow.on .switch,
+html[data-tod='day'] .ai-chip.on .switch,
+html[data-tod='day'] .on > .switch { background: #2f7bf0; }
+html[data-tod='day'] .slider-track {
+  background:
+    repeating-linear-gradient(90deg, transparent 0 calc(100% / 14 - 1px), rgba(20, 32, 60, 0.2) calc(100% / 14 - 1px) calc(100% / 14)) center / 100% 9px no-repeat,
+    rgba(20, 32, 60, 0.09);
+  box-shadow: 0 0 0 1px rgba(20, 32, 60, 0.08) inset;
+}
+html[data-tod='day'] .power { color: var(--muted); }
+html[data-tod='day'] .power.on { color: #fff; }
+html[data-tod='day'] .metric { background: linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.6)); }
+html[data-tod='day'] .metric-value { color: var(--text); }
+html[data-tod='day'] .metric.amber .metric-value { color: #b8620f; }
+html[data-tod='day'] .metric.amber .metric-label .icon { color: #d9822b; }
+html[data-tod='day'] .metric.green .metric-label .icon { color: #1fa463; }
+html[data-tod='day'] .metric.sky .metric-label .icon,
+html[data-tod='day'] .metric.water .metric-label .icon,
+html[data-tod='day'] .room-label .icon { color: #2f7bf0; }
+html[data-tod='day'] .room-value { color: var(--text); }
+html[data-tod='day'] .room-read.cooling .room-value { color: #2f7bf0; }
+html[data-tod='day'] .ai-badge { background: rgba(20, 32, 60, 0.08); }
+html[data-tod='day'] .ai-chip.on { background: linear-gradient(135deg, rgba(31, 164, 99, 0.16), rgba(47, 123, 240, 0.14)); border-color: rgba(31, 164, 99, 0.5); box-shadow: 0 0 22px rgba(31, 164, 99, 0.1); }
+html[data-tod='day'] .flow-view,
+html[data-tod='day'] .pos-btn { background: rgba(20, 32, 60, 0.05); }
+html[data-tod='day'] .pos-btn.active { background: linear-gradient(180deg, rgba(47, 123, 240, 0.2), rgba(47, 123, 240, 0.07)); border-color: rgba(47, 123, 240, 0.55); }
+html[data-tod='day'] .flow-svg .wall { stroke: rgba(20, 32, 60, 0.35); }
+html[data-tod='day'] .flow-svg .unit { fill: rgba(20, 32, 60, 0.07); stroke: rgba(20, 32, 60, 0.45); }
+html[data-tod='day'] .flow-svg .ray { stroke: #2f7bf0; }
+html[data-tod='day'] .flow-svg .ray.dim { stroke: rgba(20, 32, 60, 0.3); }
+html[data-tod='day'] .pos-btn.active .flow-svg .ray { stroke: #1d5fd0; }
+html[data-tod='day'] .bat-svg .bat-body { stroke: rgba(20, 32, 60, 0.5); }
+html[data-tod='day'] .bat-svg .bat-cap { fill: rgba(20, 32, 60, 0.5); }
+html[data-tod='day'] .bat-svg .bat-fill { fill: #1fa463; }
+html[data-tod='day'] .pos-btn.active .bat-svg .bat-body { stroke: #1d5fd0; }
+html[data-tod='day'] .fatal code { background: rgba(20, 32, 60, 0.06); color: #b3261e; }
+
+/* ---------- editor window ---------- */
+html[data-tod='day'].mode-editor .editor {
+  background: radial-gradient(70% 50% at 50% 0%, rgba(120, 160, 230, 0.25), transparent 70%), var(--bg);
+}
+html[data-tod='day'] .p-label { fill: rgba(16, 24, 40, 0.86); }
+html[data-tod='day'] .p-dim { fill: rgba(16, 24, 40, 0.45); }
+html[data-tod='day'] .p-furn rect { fill: rgba(20, 32, 60, 0.07); stroke: rgba(20, 32, 60, 0.35); }
+html[data-tod='day'] .p-furn .front { stroke: rgba(20, 32, 60, 0.5); }
+html[data-tod='day'] .p-furn:hover rect { fill: rgba(20, 32, 60, 0.14); }
+html[data-tod='day'] .p-light.sel .halo { fill: rgba(20, 32, 60, 0.15); }
+html[data-tod='day'] .p-open.open { stroke: #e8eef7; }
+html[data-tod='day'] .p-ac rect,
+html[data-tod='day'] .p-light circle,
+html[data-tod='day'] .p-light rect { stroke: #e8eef7; }
+html[data-tod='day'] .preview-wrap,
+html[data-tod='day'] .p-preview { background: #dbe6f3; }
+html[data-tod='day'] .field input,
+html[data-tod='day'] .field select { background: rgba(255, 255, 255, 0.8); }
+html[data-tod='day'] .field input:focus,
+html[data-tod='day'] .field select:focus { background: #fff; }
+html[data-tod='day'] .dot { background: rgba(20, 32, 60, 0.25); }
+html[data-tod='day'] .row.active .row-sub { color: rgba(16, 24, 40, 0.65); }
+html[data-tod='day'] .svc-card:hover { border-color: rgba(20, 32, 60, 0.2); }
+html[data-tod='day'] .p-sheet,
+html[data-tod='day'] .p-sheet-body,
+html[data-tod='day'] .p-picker { background: #f3f6fb; border-top-color: rgba(20, 32, 60, 0.12); box-shadow: 0 -18px 50px rgba(40, 60, 100, 0.2); }
+html[data-tod='day'] .p-grip span { background: rgba(20, 32, 60, 0.25); }
+html[data-tod='day'] .p-scrim { background: rgba(40, 60, 100, 0.25); }
+
+/* ---------- AI Access window ---------- */
+html[data-tod='day'].mode-agent,
+html[data-tod='day'].mode-agent body { background: #eef2f9; }
+html[data-tod='day'].mode-agent body::before { opacity: 0.35; }
+html[data-tod='day'] .agent { --card: rgba(255, 255, 255, 0.75); --card-line: rgba(20, 32, 60, 0.12); }
+html[data-tod='day'] .pill,
+html[data-tod='day'] .pill-reach,
+html[data-tod='day'] .seg,
+html[data-tod='day'] .ghost,
+html[data-tod='day'] .action,
+html[data-tod='day'] .tabs button.on,
+html[data-tod='day'] code.inline { background: rgba(20, 32, 60, 0.06); }
+html[data-tod='day'] .ghost:hover,
+html[data-tod='day'] .action:hover,
+html[data-tod='day'] .seg button.on,
+html[data-tod='day'] .copy { background: rgba(20, 32, 60, 0.1); }
+html[data-tod='day'] .row { border-top-color: rgba(20, 32, 60, 0.08); }
+html[data-tod='day'].mode-agent ::-webkit-scrollbar-thumb { background: rgba(20, 32, 60, 0.2) padding-box; }
+
+html[data-tod='day'] .tile.ac .stepper button,
+html[data-tod='day'] .ac-chip { background: rgba(20, 32, 60, 0.06); }
+html[data-tod='day'] .tile.ac .stepper button:hover { background: rgba(20, 32, 60, 0.12); }
+
+html[data-tod='day'] .tile.on .tile-sub { color: color-mix(in srgb, var(--c) 62%, #101828); }
+html[data-tod='day'] .tile.on { background: linear-gradient(135deg, color-mix(in srgb, var(--c) 22%, white), color-mix(in srgb, var(--c) 8%, white)); }

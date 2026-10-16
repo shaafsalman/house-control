@@ -72,7 +72,8 @@ export function buildHouse(config, camDir) {
   const { minX, minZ, maxX, maxZ } = config.bounds;
 
   // Plinth the model stands on.
-  const plinth = box(maxX - minX + 0.7, 0.3, maxZ - minZ + 0.7, mat('#141927', { rough: 0.9 }), { r: 0.12 });
+  const plinthMat = mat('#141927', { rough: 0.9 });
+  const plinth = box(maxX - minX + 0.7, 0.3, maxZ - minZ + 0.7, plinthMat, { r: 0.12 });
   at(plinth, (minX + maxX) / 2, -0.305, (minZ + maxZ) / 2);
   plinth.receiveShadow = true;
   group.add(plinth);
@@ -84,9 +85,13 @@ export function buildHouse(config, camDir) {
     group.add(floor);
   }
 
-  const wallBody = mat('#e7e3db', { rough: 0.95 });
+  // Two-tone walls: white up to 30% of the wall height, grey above.
+  const wallBody = mat('#f3f1ec', { rough: 0.95 });
+  const wallGrey = mat('#9da2ab', { rough: 0.95 });
   const wallCap = mat('#262b3a', { rough: 0.8 });
   const wallMats = [wallBody, wallBody, wallCap, wallBody, wallBody, wallBody];
+  const greyMats = [wallGrey, wallGrey, wallCap, wallGrey, wallGrey, wallGrey];
+  const BAND = 0.3 * H;
   const blocker = new THREE.MeshBasicMaterial({ colorWrite: false, depthWrite: false });
   const glass = new THREE.MeshStandardMaterial({
     color: '#9cc0ff', roughness: 0.08, transparent: true, opacity: 0.22,
@@ -106,6 +111,16 @@ export function buildHouse(config, camDir) {
     return m;
   };
 
+  // A stretch of wall from y0 to y1, white below BAND and grey above it.
+  const column = (s, a, b, y0, y1, t) => {
+    if (y1 <= BAND) piece(s, a, b, y0, y1, t, wallMats);
+    else if (y0 >= BAND) piece(s, a, b, y0, y1, t, greyMats);
+    else {
+      piece(s, a, b, y0, BAND, t, wallBody);
+      piece(s, a, b, BAND, y1, t, greyMats);
+    }
+  };
+
   for (const s of wallSegments(config)) {
     const exterior = s.kind === 'exterior';
     const t = exterior ? EXT_T : INT_T;
@@ -118,7 +133,7 @@ export function buildHouse(config, camDir) {
     const type = s.opening?.type;
 
     if (near) {
-      if (type !== 'door') piece(s, a, b, 0, CURB, t);
+      if (type !== 'door') column(s, a, b, 0, CURB, t);
       continue;
     }
     if (type === 'door' || type === 'open') continue;
@@ -126,8 +141,8 @@ export function buildHouse(config, camDir) {
     const height = exterior ? H : Hi;
     if (type === 'window' && exterior) {
       const { sill, head } = s.opening;
-      piece(s, a, b, 0, sill, t);
-      piece(s, a, b, Math.min(head, H), H, t);
+      column(s, a, b, 0, sill, t);
+      column(s, a, b, Math.min(head, H), H, t);
       const pane = piece(s, a, b, sill, head, 0.03, glass);
       pane.castShadow = false;
       const fw = 0.05;
@@ -138,11 +153,11 @@ export function buildHouse(config, camDir) {
     }
     if (type === 'window') continue; // a window in an interior wall is just a gap
 
-    piece(s, a, b, 0, height, t);
+    column(s, a, b, 0, height, t);
     // Interior walls are drawn cut low, but lamps should still be contained by the
     // real, full-height wall: an invisible shadow caster fills in the missing part.
     if (!exterior && Hi < H) piece(s, a, b, Hi, H, 0.04, blocker).receiveShadow = false;
   }
 
-  return { group, floors };
+  return { group, floors, plinth: plinthMat, glass };
 }

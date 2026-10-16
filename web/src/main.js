@@ -7,6 +7,8 @@ import { h, openMenu } from './ui/dom.js';
 import { icon } from './ui/icons.js';
 import { isNative, isPhone, post, incoming, haptic } from './bridge.js';
 import { publishWidgets, runWidgetAction } from './widgets.js';
+import { watchDaylight } from './daylight.js';
+import './day.css';
 
 const DEMO_PLANS = [
   { id: 'home', name: 'Demo · Apartment' },
@@ -213,6 +215,8 @@ async function renderShot(config, store, room) {
     holder.remove();
   }
 }
+
+watchDaylight(); // day / night from the clock: sets html[data-tod] and tells every 3D scene
 
 const mode = window.__HOUSE_BOOT__?.mode || new URLSearchParams(location.search).get('mode') || 'panel';
 if (mode === 'editor') {

@@ -122,6 +122,7 @@ function tiles(base, perSide, grout) {
 const FLOORS = {
   oak: () => planks('#c7a47c'),
   walnut: () => planks('#94705a'),
+  brown: () => planks('#7a4c2c'),
   tile: () => tiles('#d5dade', 4, '#aab0b8'),
   stone: () => tiles('#a2a7ae', 3, '#7c828b'),
 };

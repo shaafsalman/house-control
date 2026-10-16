@@ -28,7 +28,7 @@ export const SERVICES = {
   hue: { name: 'Philips Hue', short: 'Hue' },
   homekit: { name: 'Apple Home', short: 'Apple Home' },
 };
-export const FLOOR_KINDS = ['oak', 'walnut', 'tile', 'stone'];
+export const FLOOR_KINDS = ['oak', 'walnut', 'brown', 'tile', 'stone'];
 
 // The plan exactly as written on disk (the editor works on this form).
 export async function loadRawConfig() {
